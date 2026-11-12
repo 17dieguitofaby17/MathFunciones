@@ -1,0 +1,6 @@
+{
+  "name": "MATHFUNCIONES - U.E. Santa Mariana de Jesús",
+  "description": "MATHFUNCIONES: App de gamificación matemática para 2do de Bachillerato de la U.E. Santa Mariana de Jesús Riobamba. 'Ternura que acompaña, Firmeza que transforma'. Desafíos exclusivos 15h00 y 18h00 con doble puntaje, composición e inversa de funciones, insignias coleccionables y graficador interactivo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

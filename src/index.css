@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --marianita-blue: #0D47A1;  /* Azul Real del Escudo */
+    --marianita-blue-light: #1565C0;
+    --marianita-red: #DC2626;   /* Rojo Antorcha */
+    --marianita-gold: #F59E0B;  /* Dorado Borde */
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .font-math {
+    font-family: 'JetBrains Mono', 'Cambria Math', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-motto {
+    font-family: 'Caveat', cursive;
+  }
+}
+
+.smooth-scale {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media print {
+  header, nav, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
