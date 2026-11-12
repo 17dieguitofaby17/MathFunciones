@@ -12,9 +12,15 @@ import {
   deleteCustomQuestion, 
   getLeaderboard, 
   checkAndAwardBadges,
-  getRankTitle
+  getRankTitle,
+  createTeacherProfile,
+  registerOrUpdateStudentInLeaderboard,
+  deleteStudentEntry,
+  clearAllRegisteredStudents,
+  resetEntireDatabase,
+  DEFAULT_PROFILE
 } from './utils/storage';
-import { StudentProfile, Question } from './types';
+import { StudentProfile, Question, LeaderboardEntry } from './types';
 import { Header } from './components/Header';
 import { ChallengeView } from './components/ChallengeView';
 import { ExclusiveChallengesView } from './components/ExclusiveChallengesView';
@@ -46,18 +52,21 @@ import confetti from 'canvas-confetti';
 export default function App() {
   const [profile, setProfile] = useState<StudentProfile>(getProfile);
   const [questions, setQuestions] = useState<Question[]>(getAllQuestions);
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>(() => getLeaderboard(getProfile()));
   const [currentTab, setCurrentTab] = useState<'challenges' | 'exclusive' | 'lab' | 'exam' | 'bank' | 'leaderboard' | 'teacher'>('challenges');
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [isBadgesModalOpen, setIsBadgesModalOpen] = useState<boolean>(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
   const [newBadgeToast, setNewBadgeToast] = useState<string | null>(null);
 
-  // Check if student has valid registration (2 names and 2 surnames = 4 words) and verified access code
+  // Check if student has valid registration (2 names and 2 surnames = 4 words) and verified access code, or is in teacher mode
   const isStudentRegistered = 
-    Boolean(profile.name) && 
-    profile.name !== 'Estudiante Marianita' && 
-    profile.name.trim().split(/\s+/).filter(Boolean).length >= 4 &&
-    Boolean(profile.accessCodeVerified);
+    Boolean(profile.isTeacher) || (
+      Boolean(profile.name) && 
+      profile.name !== 'Estudiante Marianita' && 
+      profile.name.trim().split(/\s+/).filter(Boolean).length >= 4 &&
+      Boolean(profile.accessCodeVerified)
+    );
 
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState<boolean>(!isStudentRegistered);
 
@@ -78,6 +87,12 @@ export default function App() {
   const handleUpdateProfile = (updated: StudentProfile) => {
     setProfile(updated);
     saveProfile(updated);
+    if (!updated.isTeacher && updated.name !== 'Estudiante Marianita' && updated.accessCodeVerified) {
+      const updatedList = registerOrUpdateStudentInLeaderboard(updated);
+      setLeaderboardEntries(updatedList);
+    } else {
+      setLeaderboardEntries(getLeaderboard(updated));
+    }
   };
 
   const handleRegisterStudent = (fullName: string, course: string, _accessCode: string) => {
@@ -86,9 +101,61 @@ export default function App() {
       name: fullName,
       course: course,
       accessCodeVerified: true,
+      registeredAt: Date.now(),
     };
     handleUpdateProfile(updated);
     setIsRegistrationModalOpen(false);
+  };
+
+  const handleEnterTeacherMode = (teacherId: string, teacherPass: string): boolean => {
+    const cleanId = teacherId.trim();
+    const cleanPass = teacherPass.trim();
+
+    if (cleanId === 'Dieguitofaby17' && cleanPass === '17Fabicio17') {
+      sound.playLevelUp();
+      const teacherProf = createTeacherProfile();
+      handleUpdateProfile(teacherProf);
+      setIsRegistrationModalOpen(false);
+      setCurrentTab('teacher');
+      return true;
+    }
+    return false;
+  };
+
+  const handleExitTeacherMode = () => {
+    sound.playClick();
+    handleUpdateProfile(DEFAULT_PROFILE);
+    setIsRegistrationModalOpen(true);
+    setCurrentTab('challenges');
+  };
+
+  const handleClearAllStudents = () => {
+    sound.playClick();
+    const emptyList = clearAllRegisteredStudents();
+    setLeaderboardEntries(emptyList);
+  };
+
+  const handleDeleteStudent = (studentId: string) => {
+    sound.playClick();
+    const updatedList = deleteStudentEntry(studentId);
+    setLeaderboardEntries(updatedList);
+  };
+
+  const handleResetDatabase = () => {
+    sound.playClick();
+    resetEntireDatabase();
+    setQuestions(getAllQuestions());
+    if (profile.isTeacher) {
+      const teacherProf = createTeacherProfile();
+      saveProfile(teacherProf);
+      setProfile(teacherProf);
+      setLeaderboardEntries([]);
+    } else {
+      setProfile(DEFAULT_PROFILE);
+      saveProfile(DEFAULT_PROFILE);
+      setLeaderboardEntries([]);
+      setIsRegistrationModalOpen(true);
+    }
   };
 
   const handleCheckBadges = (currentProf: StudentProfile) => {
@@ -124,8 +191,6 @@ export default function App() {
     });
     setQuestions(current);
   };
-
-  const leaderboardEntries = getLeaderboard(profile);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
@@ -291,6 +356,11 @@ export default function App() {
           <TeacherDashboardView
             currentProfile={profile}
             leaderboardEntries={leaderboardEntries}
+            onClearAllStudents={handleClearAllStudents}
+            onDeleteStudent={handleDeleteStudent}
+            onExitTeacherMode={handleExitTeacherMode}
+            onEnterTeacherMode={handleEnterTeacherMode}
+            onResetDatabase={handleResetDatabase}
           />
         )}
       </main>
@@ -322,6 +392,7 @@ export default function App() {
       <RegistrationModal
         isOpen={isRegistrationModalOpen}
         onRegister={handleRegisterStudent}
+        onEnterTeacherMode={handleEnterTeacherMode}
         currentProfile={profile}
       />
 

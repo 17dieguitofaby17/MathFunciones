@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   CheckCircle2, 
   XCircle, 
-  HelpCircle, 
   ArrowRight, 
   Sparkles, 
   Lock, 
-  ChevronRight, 
   Check, 
-  Flame, 
-  BookOpen, 
-  Lightbulb 
+  Lightbulb,
+  Shuffle
 } from 'lucide-react';
 import { Question, StudentProfile, MathTopic } from '../types';
 import { FunctionPlotter } from './FunctionPlotter';
@@ -28,11 +25,20 @@ interface ChallengeViewProps {
 const LEVEL_INFO = [
   { level: 1, title: 'Nivel 1: Rectas, Lineales & Afines', desc: 'Pendientes, ordenadas al origen, cortes (x,0) y (0,y)', icon: '📐' },
   { level: 2, title: 'Nivel 2: Cuadráticas & Parábolas', desc: 'Vértice (h,k), concavidad, discriminante y rango acotado', icon: '⚡' },
-  { level: 3, title: 'Nivel 3: Racionales & Radicales', desc: 'Asíntotas verticales/horizontales y raíces pares ≥ 0', icon: '🔍' },
-  { level: 4, title: 'Nivel 4: Exponenciales & Logaritmos', desc: 'Curvas de crecimiento, base e inversa, asíntotas', icon: '🚀' },
-  { level: 5, title: 'Nivel 5: Valor Absoluto & Por Partes', desc: 'Vértice en V y condiciones por intervalos', icon: '🧩' },
-  { level: 6, title: 'Nivel 6: Desafío Maestro Integrador', desc: 'Análisis global completo tipo evaluación quimestral', icon: '👑' },
+  { level: 3, title: 'Nivel 3: Racionales, Radicales & (f∘g)', desc: 'Asíntotas V/H, raíces pares ≥ 0 y composición', icon: '🔍' },
+  { level: 4, title: 'Nivel 4: Exponenciales, Logs & f⁻¹', desc: 'Curvas de crecimiento, asíntotas y función inversa', icon: '🚀' },
+  { level: 5, title: 'Nivel 5: Valor Absoluto, A Trozos & f⁻¹', desc: 'Vértice en V, tramos e inversas con restricción', icon: '🧩' },
+  { level: 6, title: 'Nivel 6: Desafío Maestro Integrador', desc: 'Análisis global completo, C⁺/C⁻ e inversas complejas', icon: '👑' },
 ];
+
+function shuffleArray<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 export const ChallengeView: React.FC<ChallengeViewProps> = ({
   questions,
@@ -40,15 +46,43 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
   onUpdateProfile,
   onCheckBadges,
 }) => {
-  const [activeLevel, setActiveLevel] = useState<number>(profile.unlockedLevel || 1);
+  const effectiveUnlockedLevel = profile.isTeacher ? 6 : (profile.unlockedLevel || 1);
+  const [activeLevel, setActiveLevel] = useState<number>(profile.isTeacher ? 1 : (profile.unlockedLevel || 1));
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
+  const [shuffleSeed, setShuffleSeed] = useState<number>(() => Date.now());
 
-  // Filter questions for active level
-  const levelQuestions = questions.filter((q) => q.level === activeLevel);
+  // Sync activeLevel if teacher mode unlocks everything
+  useEffect(() => {
+    if (profile.isTeacher) return;
+    if (activeLevel > effectiveUnlockedLevel) {
+      setActiveLevel(effectiveUnlockedLevel);
+    }
+  }, [profile.isTeacher, effectiveUnlockedLevel, activeLevel]);
+
+  // Randomize question order AND option order (A, B, C, D) on level change or reshuffle
+  const levelQuestions = useMemo(() => {
+    const filtered = questions.filter((q) => q.level === activeLevel);
+    const randomizedQuestions = shuffleArray(filtered).map((q) => ({
+      ...q,
+      options: shuffleArray(q.options),
+    }));
+    return randomizedQuestions;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, activeLevel, shuffleSeed]);
+
   const activeQuestion = levelQuestions[currentQuestionIndex] || levelQuestions[0];
+
+  const handleReshuffleLevel = () => {
+    sound.playClick();
+    setShuffleSeed(Date.now());
+    setCurrentQuestionIndex(0);
+    setSelectedOptionId(null);
+    setHasSubmitted(false);
+    setShowExplanation(false);
+  };
 
   const handleSelectOption = (optionId: string) => {
     if (hasSubmitted) return;
@@ -84,7 +118,6 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
       });
 
       newStreak += 1;
-      // Multiplier based on streak
       const multiplier = newStreak >= 5 ? 1.5 : newStreak >= 3 ? 1.2 : 1.0;
       earnedXp = Math.round(activeQuestion.xpReward * multiplier);
 
@@ -97,11 +130,11 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
         timestamp: Date.now()
       };
 
-      // Check level unlock condition: if solved at least 2 questions in current level, unlock next!
-      let newUnlockedLevel = profile.unlockedLevel;
-      if (activeLevel === profile.unlockedLevel && activeLevel < 6) {
+      // Unlock next level after solving at least 3 questions in the current level
+      let newUnlockedLevel = effectiveUnlockedLevel;
+      if (!profile.isTeacher && activeLevel === profile.unlockedLevel && activeLevel < 6) {
         const solvedInLevel = levelQuestions.filter(q => currentCompleted[q.id]?.correct).length + 1;
-        if (solvedInLevel >= Math.min(2, levelQuestions.length)) {
+        if (solvedInLevel >= Math.min(3, levelQuestions.length)) {
           newUnlockedLevel = activeLevel + 1;
           sound.playLevelUp();
         }
@@ -120,7 +153,6 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
       onCheckBadges(updatedProfile);
     } else {
       sound.playIncorrect();
-      newStreak = 0;
 
       currentCompleted[activeQuestion.id] = {
         correct: false,
@@ -148,7 +180,7 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
     if (currentQuestionIndex + 1 < levelQuestions.length) {
       setCurrentQuestionIndex((prev) => prev + 1);
     } else {
-      // Loop back to start of level or invite to next level
+      setShuffleSeed(Date.now());
       setCurrentQuestionIndex(0);
     }
   };
@@ -159,20 +191,25 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
               <span>Ruta de Aprendizaje Marianita</span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-[#0D47A1] dark:bg-blue-950 dark:text-blue-300">
-                6 Niveles Progresivos
+                6 Niveles · 50 Ejercicios por Nivel
               </span>
+              {profile.isTeacher && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                  Acceso Total Docente
+                </span>
+              )}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Desbloquea cada nivel resolviendo desafíos de tipos de funciones, dominios, rangos y gráficas.
+              Orden aleatorio en cada sesión y opciones A, B, C, D mezcladas dinámicamente para evitar memorización.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-            <span>Nivel Actual:</span>
+            <span>Nivel Desbloqueado:</span>
             <span className="px-2 py-1 rounded bg-[#0D47A1] text-white font-mono">
-              {profile.unlockedLevel} / 6
+              {effectiveUnlockedLevel} / 6
             </span>
           </div>
         </div>
@@ -180,8 +217,9 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
         {/* Level Buttons Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {LEVEL_INFO.map((item) => {
-            const isUnlocked = item.level <= profile.unlockedLevel;
+            const isUnlocked = profile.isTeacher || item.level <= effectiveUnlockedLevel;
             const isActive = activeLevel === item.level;
+            const totalInLevel = questions.filter((q) => q.level === item.level).length;
             const completedCount = questions.filter(
               (q) => q.level === item.level && profile.completedQuestions[q.id]?.correct
             ).length;
@@ -193,6 +231,7 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
                   if (isUnlocked) {
                     sound.playClick();
                     setActiveLevel(item.level);
+                    setShuffleSeed(Date.now());
                     setCurrentQuestionIndex(0);
                     setSelectedOptionId(null);
                     setHasSubmitted(false);
@@ -212,12 +251,12 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
                   <span className="text-base">{item.icon}</span>
                   {!isUnlocked ? (
                     <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  ) : completedCount > 0 ? (
+                  ) : (
                     <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center">
-                      <Check className="w-3 h-3 inline mr-0.5" />
-                      {completedCount}
+                      {completedCount > 0 && <Check className="w-3 h-3 inline mr-0.5" />}
+                      {completedCount}/{totalInLevel}
                     </span>
-                  ) : null}
+                  )}
                 </div>
                 <div className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-1">
                   Nivel {item.level}
@@ -238,7 +277,7 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
           <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
             {/* Question Header */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#0D47A1] text-white">
                   Nivel {activeQuestion.level}
                 </span>
@@ -250,9 +289,19 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
                   Ejercicio {currentQuestionIndex + 1} de {levelQuestions.length}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>+{activeQuestion.xpReward} XP</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleReshuffleLevel}
+                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  title="Mezclar aleatoriamente los 50 ejercicios y sus alternativas"
+                >
+                  <Shuffle className="w-3 h-3" />
+                  <span>Barajar</span>
+                </button>
+                <div className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>+{activeQuestion.xpReward} XP</span>
+                </div>
               </div>
             </div>
 
@@ -359,14 +408,13 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
 
           {/* Right Zone: Interactive Graph & Step-by-Step Explanation (5 Cols) */}
           <div className="lg:col-span-5 space-y-4">
-            {/* Live Graph of the Exercise */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Visualizador Cartesiano en Vivo
                 </span>
                 <span className="text-[11px] font-mono text-slate-500">
-                  {activeQuestion.functionFormula}
+                  <MathFormula formula={activeQuestion.functionFormula} />
                 </span>
               </div>
 
@@ -405,7 +453,6 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
               </div>
             </div>
 
-            {/* Step-by-Step Pedagogical Explanation Card */}
             {showExplanation && (
               <div className="bg-gradient-to-br from-amber-50/80 via-white to-rose-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 rounded-2xl p-5 border border-amber-200 dark:border-slate-700 shadow-sm space-y-3.5 animate-fadeIn">
                 <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-sm">

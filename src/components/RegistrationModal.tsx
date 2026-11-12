@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { StudentProfile } from '../types';
 import { sound } from '../utils/audio';
-import { ShieldCheck, UserCheck, AlertCircle, KeyRound, Lock } from 'lucide-react';
+import { ShieldCheck, UserCheck, AlertCircle, KeyRound, Lock, GraduationCap } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface RegistrationModalProps {
   isOpen: boolean;
   onRegister: (name: string, course: string, accessCode: string) => void;
+  onEnterTeacherMode: (teacherId: string, teacherPass: string) => boolean;
   currentProfile?: StudentProfile;
 }
 
@@ -15,11 +16,15 @@ const REQUIRED_ACCESS_CODE = 'UESMJ2026DA';
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   isOpen,
   onRegister,
+  onEnterTeacherMode,
   currentProfile,
 }) => {
   const [fullName, setFullName] = useState(currentProfile?.name && currentProfile.name !== 'Estudiante Marianita' ? currentProfile.name : '');
   const [course, setCourse] = useState(currentProfile?.course || '2do BGU "A"');
   const [accessCode, setAccessCode] = useState('');
+  const [isTeacherPromptOpen, setIsTeacherPromptOpen] = useState(false);
+  const [teacherId, setTeacherId] = useState('');
+  const [teacherPassword, setTeacherPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -179,12 +184,85 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 
           <button
             type="submit"
-            className="w-full py-3.5 px-5 rounded-xl font-bold text-sm bg-[#0D47A1] hover:bg-blue-900 text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-5 rounded-xl font-bold text-sm bg-[#0D47A1] hover:bg-blue-900 text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
           >
             <UserCheck className="w-4 h-4 text-amber-300" />
             <span>Confirmar Registro e Ingresar</span>
           </button>
         </form>
+
+        {/* Teacher Mode Direct Access */}
+        <div className="pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
+          {!isTeacherPromptOpen ? (
+            <button
+              type="button"
+              onClick={() => setIsTeacherPromptOpen(true)}
+              className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>¿Es usted el docente? Ingresar en Modo Docente</span>
+            </button>
+          ) : (
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-700 text-left space-y-3 shadow-md animate-scaleUp">
+              <div className="flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200">
+                <span className="flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-amber-600" />
+                  <span>Inicio de Sesión Docente (Mgs. Diego Aulla)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsTeacherPromptOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer px-1.5 py-0.5 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Usuario / ID Docente:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Usuario docente (ej. Dieguitofaby17)"
+                    value={teacherId}
+                    onChange={(e) => setTeacherId(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-amber-300 dark:border-amber-700 text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Contraseña Docente:
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Contraseña docente..."
+                    value={teacherPassword}
+                    onChange={(e) => setTeacherPassword(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-amber-300 dark:border-amber-700 text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const ok = onEnterTeacherMode(teacherId, teacherPassword);
+                  if (!ok) {
+                    sound.playIncorrect();
+                    setErrorMsg('Credenciales docentes incorrectas. Verifica tu ID y contraseña.');
+                  }
+                }}
+                className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl cursor-pointer shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Ingresar al Modo Docente</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

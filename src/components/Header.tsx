@@ -162,24 +162,33 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action / Student Profile Zone */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {/* Streak Flame */}
-          <div
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold"
-            title={`Racha actual: ${profile.streak} respuestas correctas`}
-          >
-            <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500 animate-pulse" />
-            <span className="font-mono tabular-nums">{profile.streak}</span>
-          </div>
+          {profile.isTeacher ? (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-xs font-black shadow-sm ring-2 ring-amber-300">
+              <GraduationCap className="w-4 h-4 text-slate-950" />
+              <span>Docente: Mgs. Diego Aulla</span>
+            </div>
+          ) : (
+            <>
+              {/* Streak Flame */}
+              <div
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold"
+                title={`Racha actual: ${profile.streak} respuestas correctas`}
+              >
+                <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500 animate-pulse" />
+                <span className="font-mono tabular-nums">{profile.streak}</span>
+              </div>
 
-          {/* XP Pill */}
-          <div
-            className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 text-[#0D47A1] dark:text-blue-300 text-xs font-black"
-            title="Puntos de experiencia acumulados"
-          >
-            <span className="text-amber-500 font-mono">✦</span>
-            <span className="font-mono tabular-nums">{profile.xp}</span>
-            <span className="text-[10px] text-slate-500 font-semibold">XP</span>
-          </div>
+              {/* XP Pill */}
+              <div
+                className="flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 text-[#0D47A1] dark:text-blue-300 text-xs font-black"
+                title="Puntos de experiencia acumulados"
+              >
+                <span className="text-amber-500 font-mono">✦</span>
+                <span className="font-mono tabular-nums">{profile.xp}</span>
+                <span className="text-[10px] text-slate-500 font-semibold">XP</span>
+              </div>
+            </>
+          )}
 
           {/* Badges Button */}
           <button

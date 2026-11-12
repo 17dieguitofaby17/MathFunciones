@@ -92,6 +92,14 @@ export interface Question {
   xpReward: number;
 }
 
+export interface RubricStep {
+  id: 'dominio' | 'asintotas' | 'ceros' | 'rango' | 'intervalos' | 'grafica';
+  label: string;
+  maxPoints: number; // e.g., 0.25, 1.0, 0.5
+  prompt: string;
+  options: QuestionOption[];
+}
+
 export interface ExclusiveChallenge {
   id: string;
   slot: '15:00' | '18:00';
@@ -103,8 +111,12 @@ export interface ExclusiveChallenge {
   functionType: FunctionCategory;
   domain: string;
   range: string;
+  asymptotesLabel: string;
+  zerosAndIntercepts: string;
+  positivityInterval: string;
+  negativityInterval: string;
   prompt: string;
-  options: QuestionOption[];
+  rubricSteps: RubricStep[];
   stepByStepSolution: StepByStepSolution;
   graphConfig: GraphConfig;
   baseXp: number;
@@ -128,6 +140,8 @@ export interface StudentProfile {
   name: string;
   course: string; // e.g., '2do BGU "A"', '2do BGU "B"', '2do BGU "C"'
   accessCodeVerified?: boolean;
+  isTeacher?: boolean;
+  registeredAt?: number;
   avatarId: string;
   xp: number;
   streak: number;
@@ -161,4 +175,8 @@ export interface LeaderboardEntry {
   levelTitle: string;
   exclusiveChallengesCount: number;
   isCurrentUser?: boolean;
+  registeredAt?: number;
+  isOnline?: boolean;
+  solvedQuestionsCount?: number;
+  lastActiveTime?: string;
 }

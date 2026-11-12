@@ -2,30 +2,33 @@ import { StudentProfile, Question, LeaderboardEntry } from '../types';
 import { INITIAL_QUESTIONS } from '../data/questionBank';
 import { BADGES } from '../data/badges';
 
-const PROFILE_KEY = 'marianita_math_profile_v3';
-const QUESTIONS_KEY = 'marianita_math_custom_questions_v3';
-const LEADERBOARD_KEY = 'marianita_math_leaderboard_v3';
+const PROFILE_KEY = 'marianita_math_profile_v5';
+const QUESTIONS_KEY = 'marianita_math_custom_questions_v5';
+const LEADERBOARD_KEY = 'marianita_math_registered_students_v5';
+const DB_RESET_FLAG = 'marianita_math_db_reset_v5_done';
 
 export const DEFAULT_PROFILE: StudentProfile = {
   id: 'student_' + Math.random().toString(36).substring(2, 9),
   name: 'Estudiante Marianita',
   course: '2do BGU "A"',
+  accessCodeVerified: false,
+  isTeacher: false,
   avatarId: 'marianita_scholar',
-  xp: 150,
-  streak: 2,
+  xp: 0,
+  streak: 0,
   lastActiveDate: new Date().toISOString().split('T')[0],
   lives: 5,
   maxLives: 5,
   unlockedLevel: 1,
   completedQuestions: {},
   exclusiveChallengesCompleted: {},
-  unlockedBadges: ['primer_paso'],
+  unlockedBadges: [],
   stats: {
-    totalAnswered: 2,
-    totalCorrect: 2,
+    totalAnswered: 0,
+    totalCorrect: 0,
     correctByTopic: {
-      tipo: 1,
-      dominio: 1,
+      tipo: 0,
+      dominio: 0,
       rango: 0,
       cortes: 0,
       grafica: 0,
@@ -34,8 +37,8 @@ export const DEFAULT_PROFILE: StudentProfile = {
       inversa: 0
     },
     totalByTopic: {
-      tipo: 1,
-      dominio: 1,
+      tipo: 0,
+      dominio: 0,
       rango: 0,
       cortes: 0,
       grafica: 0,
@@ -49,21 +52,69 @@ export const DEFAULT_PROFILE: StudentProfile = {
   }
 };
 
-export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [
-  { id: 'lb_1', name: 'Doménica Morales', course: '2do BGU "A"', avatar: '🎓', xp: 1850, streak: 14, badgesCount: 11, levelTitle: 'Gran Sabia Marianita', exclusiveChallengesCount: 12 },
-  { id: 'lb_2', name: 'Mateo Chimborazo', course: '2do BGU "B"', avatar: '📐', xp: 1420, streak: 9, badgesCount: 8, levelTitle: 'Maestro de Funciones', exclusiveChallengesCount: 9 },
-  { id: 'lb_3', name: 'Valeria Guamán', course: '2do BGU "A"', avatar: '⭐', xp: 1150, streak: 7, badgesCount: 7, levelTitle: 'Alquimista de Funciones', exclusiveChallengesCount: 6 },
-  { id: 'lb_4', name: 'Sebastián Vinueza', course: '2do BGU "C"', avatar: '⚡', xp: 980, streak: 6, badgesCount: 6, levelTitle: 'Explorador del Dominio', exclusiveChallengesCount: 5 },
-  { id: 'lb_5', name: 'Camila Alcocer', course: '2do BGU "B"', avatar: '🔬', xp: 810, streak: 4, badgesCount: 5, levelTitle: 'Arquitecta de Parábolas', exclusiveChallengesCount: 3 },
-  { id: 'lb_6', name: 'Nicolás Freire', course: '2do BGU "C"', avatar: '📚', xp: 620, streak: 3, badgesCount: 4, levelTitle: 'Maestro de la Recta', exclusiveChallengesCount: 2 },
-];
+export const INITIAL_LEADERBOARD: LeaderboardEntry[] = [];
+
+/**
+ * Purge all previous test database records (v1-v4 and legacy keys) once
+ * so the database starts completely clean for real student registrations.
+ */
+export function purgeLegacyDatabasesIfNeeded(): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (localStorage.getItem(DB_RESET_FLAG) === 'true') return;
+
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (
+        k.startsWith('marianita_math_') &&
+        !k.endsWith('_v5') &&
+        k !== DB_RESET_FLAG
+      ) {
+        keysToRemove.push(k);
+      }
+      if (k.startsWith('reto_funciones') || k.startsWith('mathfunciones_')) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify([]));
+    localStorage.setItem(DB_RESET_FLAG, 'true');
+  } catch (e) {
+    console.error('Error purging legacy database keys', e);
+  }
+}
+
+export function resetEntireDatabase(): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('marianita_math_') || k.startsWith('reto_funciones'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify([]));
+    localStorage.setItem(DB_RESET_FLAG, 'true');
+  } catch (e) {
+    console.error('Error resetting database', e);
+  }
+}
 
 export function getProfile(): StudentProfile {
   try {
+    purgeLegacyDatabasesIfNeeded();
     const raw = localStorage.getItem(PROFILE_KEY);
     if (!raw) {
-      saveProfile(DEFAULT_PROFILE);
-      return DEFAULT_PROFILE;
+      const fresh: StudentProfile = {
+        ...DEFAULT_PROFILE,
+        id: 'student_' + Math.random().toString(36).substring(2, 9),
+      };
+      saveProfile(fresh);
+      return fresh;
     }
     const parsed = JSON.parse(raw);
     return {
@@ -175,25 +226,25 @@ export function checkAndAwardBadges(profile: StudentProfile): { updatedProfile: 
     newlyUnlocked.push('maestro_lineal');
   }
 
-  // Cazador Cortes
-  if ((profile.stats.correctByTopic.cortes || 0) >= 3 && !unlocked.has('cazador_cortes')) {
+  // Cazador de Cortes
+  if ((profile.stats.correctByTopic.cortes || 0) >= 5 && !unlocked.has('cazador_cortes')) {
     unlocked.add('cazador_cortes');
     newlyUnlocked.push('cazador_cortes');
   }
 
-  // Arquitecto Parábolas
+  // Arquitecto de Parábolas
   if (profile.unlockedLevel >= 3 && !unlocked.has('arquitecto_parabolas')) {
     unlocked.add('arquitecto_parabolas');
     newlyUnlocked.push('arquitecto_parabolas');
   }
 
-  // Explorador Dominio
-  if (((profile.stats.correctByTopic.dominio || 0) + (profile.stats.correctByTopic.rango || 0)) >= 3 && !unlocked.has('explorador_dominio')) {
+  // Explorador del Dominio
+  if ((profile.stats.correctByTopic.dominio || 0) >= 5 && !unlocked.has('explorador_dominio')) {
     unlocked.add('explorador_dominio');
     newlyUnlocked.push('explorador_dominio');
   }
 
-  // Guardián Asíntotas
+  // Guardián de Asíntotas
   if (profile.unlockedLevel >= 4 && !unlocked.has('guardian_asintotas')) {
     unlocked.add('guardian_asintotas');
     newlyUnlocked.push('guardian_asintotas');
@@ -245,6 +296,9 @@ export function checkAndAwardBadges(profile: StudentProfile): { updatedProfile: 
   };
 
   saveProfile(updatedProfile);
+  if (!updatedProfile.isTeacher && updatedProfile.accessCodeVerified) {
+    registerOrUpdateStudentInLeaderboard(updatedProfile);
+  }
   return { updatedProfile, newlyUnlocked };
 }
 
@@ -252,6 +306,17 @@ export function getLeaderboard(currentProfile: StudentProfile): LeaderboardEntry
   try {
     const raw = localStorage.getItem(LEADERBOARD_KEY);
     const list: LeaderboardEntry[] = raw ? JSON.parse(raw) : INITIAL_LEADERBOARD;
+
+    // In teacher mode, simply return the student list sorted by XP
+    if (currentProfile.isTeacher) {
+      return list.filter(e => e.id !== currentProfile.id).sort((a, b) => b.xp - a.xp);
+    }
+
+    // Only add user entry if they are a real registered student
+    const isRegistered = currentProfile.name && currentProfile.name !== 'Estudiante Marianita' && currentProfile.accessCodeVerified;
+    if (!isRegistered) {
+      return list;
+    }
 
     const currentLevelTitle = getRankTitle(currentProfile.xp);
     const userEntry: LeaderboardEntry = {
@@ -264,7 +329,10 @@ export function getLeaderboard(currentProfile: StudentProfile): LeaderboardEntry
       badgesCount: currentProfile.unlockedBadges.length,
       levelTitle: currentLevelTitle,
       exclusiveChallengesCount: currentProfile.stats.exclusiveCount || Object.keys(currentProfile.exclusiveChallengesCompleted || {}).length,
-      isCurrentUser: true
+      isCurrentUser: true,
+      isOnline: true,
+      registeredAt: currentProfile.registeredAt || Date.now(),
+      solvedQuestionsCount: Object.keys(currentProfile.completedQuestions || {}).length,
     };
 
     const filtered = list.filter(e => e.id !== currentProfile.id && !e.isCurrentUser);
@@ -274,6 +342,120 @@ export function getLeaderboard(currentProfile: StudentProfile): LeaderboardEntry
   } catch {
     return INITIAL_LEADERBOARD;
   }
+}
+
+export function saveLeaderboard(list: LeaderboardEntry[]): void {
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error('Error saving leaderboard', e);
+  }
+}
+
+export function clearAllRegisteredStudents(): LeaderboardEntry[] {
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify([]));
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function deleteStudentEntry(id: string): LeaderboardEntry[] {
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_KEY);
+    const list: LeaderboardEntry[] = raw ? JSON.parse(raw) : [];
+    const updated = list.filter(s => s.id !== id);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function registerOrUpdateStudentInLeaderboard(profile: StudentProfile): LeaderboardEntry[] {
+  if (profile.isTeacher || profile.name === 'Estudiante Marianita' || !profile.accessCodeVerified) {
+    return getStoredStudents();
+  }
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_KEY);
+    const list: LeaderboardEntry[] = raw ? JSON.parse(raw) : [];
+    const existingIndex = list.findIndex(s => s.id === profile.id || s.name.trim().toLowerCase() === profile.name.trim().toLowerCase());
+
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const solvedCount = Object.keys(profile.completedQuestions || {}).length;
+
+    const studentEntry: LeaderboardEntry = {
+      id: profile.id,
+      name: profile.name,
+      course: profile.course,
+      avatar: '🌟',
+      xp: profile.xp,
+      streak: profile.streak,
+      badgesCount: profile.unlockedBadges.length,
+      levelTitle: getRankTitle(profile.xp),
+      exclusiveChallengesCount: profile.stats.exclusiveCount || Object.keys(profile.exclusiveChallengesCompleted || {}).length,
+      registeredAt: profile.registeredAt || Date.now(),
+      isOnline: true,
+      solvedQuestionsCount: solvedCount,
+      lastActiveTime: timeStr
+    };
+
+    let updated: LeaderboardEntry[];
+    if (existingIndex >= 0) {
+      updated = [...list];
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        ...studentEntry
+      };
+    } else {
+      updated = [studentEntry, ...list];
+    }
+
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [];
+  }
+}
+
+export function getStoredStudents(): LeaderboardEntry[] {
+  try {
+    const raw = localStorage.getItem(LEADERBOARD_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function createTeacherProfile(): StudentProfile {
+  return {
+    id: 'docente_diego_aulla',
+    name: 'Mgs. Diego Aulla - Docente de Matemática',
+    course: 'Docente Supervisor',
+    isTeacher: true,
+    accessCodeVerified: true,
+    avatarId: 'marianita_scholar',
+    xp: 5000,
+    streak: 10,
+    lastActiveDate: new Date().toISOString().split('T')[0],
+    lives: 999,
+    maxLives: 999,
+    unlockedLevel: 6,
+    completedQuestions: {},
+    exclusiveChallengesCompleted: {},
+    unlockedBadges: ['gran_sabio_funciones', 'maestro_composicion', 'maestro_inversa'],
+    stats: {
+      totalAnswered: 0,
+      totalCorrect: 0,
+      correctByTopic: { tipo: 0, dominio: 0, rango: 0, cortes: 0, grafica: 0, integral: 0, composicion: 0, inversa: 0 },
+      totalByTopic: { tipo: 0, dominio: 0, rango: 0, cortes: 0, grafica: 0, integral: 0, composicion: 0, inversa: 0 },
+      examsTaken: 0,
+      highestExamScore: 10,
+      exclusiveCount: 0
+    }
+  };
 }
 
 export function getRankTitle(xp: number): string {

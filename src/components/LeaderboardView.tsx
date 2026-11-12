@@ -168,8 +168,21 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
       {/* Leaderboard Table */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        {filteredEntries.length === 0 ? (
+          <div className="py-14 px-4 text-center space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              Tabla de Clasificación Limpia y Lista
+            </h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              Los puestos se irán llenando automáticamente conforme los estudiantes de 2do BGU y 2do Técnico resuelvan ejercicios y acumulen puntos XP.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-4 text-center w-14">Rango</th>
@@ -278,7 +291,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
+      )}
+    </div>
     </div>
   );
 };

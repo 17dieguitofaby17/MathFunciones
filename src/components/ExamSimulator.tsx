@@ -40,9 +40,12 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
   // Start exam
   const handleStartExam = () => {
     sound.playClick();
-    // Select balanced questions
+    // Select balanced questions and shuffle options A/B/C/D
     const shuffled = [...questions].sort(() => 0.5 - Math.random());
-    const picked = shuffled.slice(0, 8); // 8 questions evaluation
+    const picked = shuffled.slice(0, 8).map((q) => ({
+      ...q,
+      options: [...q.options].sort(() => 0.5 - Math.random()),
+    }));
     setSelectedQuestions(picked);
     setUserAnswers({});
     setCurrentIndex(0);
