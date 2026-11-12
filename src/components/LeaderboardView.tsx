@@ -42,7 +42,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <img
-            src="/assets/aistudio/image_b65e9819.png"
+            src="/MathFunciones/assets/aistudio/image_b65e9819.png"
             alt="Escudo"
             className="w-12 h-14 object-contain"
             referrerPolicy="no-referrer"
