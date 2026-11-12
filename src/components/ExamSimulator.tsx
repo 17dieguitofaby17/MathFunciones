@@ -335,7 +335,7 @@ export const ExamSimulator: React.FC<ExamSimulatorProps> = ({
           {/* Institutional Report Header */}
           <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-5 space-y-1">
             <img
-              src="/assets/aistudio/image_b65e9819.png"
+              src="/MathFunciones/assets/aistudio/image_b65e9819.png"
               alt="Escudo"
               className="w-12 h-14 object-contain mx-auto mb-1"
               referrerPolicy="no-referrer"
