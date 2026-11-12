@@ -205,7 +205,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex items-start gap-4">
             <img
-              src="/assets/aistudio/image_b65e9819.png"
+              src="/MathFunciones/assets/aistudio/image_b65e9819.png"
               alt="Escudo"
               className="w-14 h-16 object-contain drop-shadow-md shrink-0 bg-white/10 p-1 rounded-xl"
               referrerPolicy="no-referrer"
