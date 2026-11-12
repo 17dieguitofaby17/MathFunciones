@@ -68,7 +68,7 @@ export const BadgesModal: React.FC<BadgesModalProps> = ({
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2.5">
             <img
-              src="/assets/aistudio/image_b65e9819.png"
+              src="/MathFunciones/assets/aistudio/image_b65e9819.png"
               alt="Escudo"
               className="w-7 h-7 object-contain"
               referrerPolicy="no-referrer"
