@@ -156,7 +156,7 @@ export default function App() {
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-bold text-amber-300">
                     <img
-                      src="/assets/aistudio/image_b65e9819.png"
+                      src="/MathFunciones/assets/aistudio/image_b65e9819.png"
                       alt="Escudo"
                       className="w-4 h-4 object-contain"
                       referrerPolicy="no-referrer"
