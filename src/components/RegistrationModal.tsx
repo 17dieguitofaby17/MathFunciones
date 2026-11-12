@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { StudentProfile } from '../types';
 import { sound } from '../utils/audio';
-import { ShieldCheck, UserCheck, AlertCircle, Sparkles, BookOpen } from 'lucide-react';
+import { ShieldCheck, UserCheck, AlertCircle, KeyRound, Lock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface RegistrationModalProps {
   isOpen: boolean;
-  onRegister: (name: string, course: string) => void;
+  onRegister: (name: string, course: string, accessCode: string) => void;
   currentProfile?: StudentProfile;
 }
+
+const REQUIRED_ACCESS_CODE = 'UESMJ2026DA';
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   isOpen,
@@ -17,6 +19,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
 }) => {
   const [fullName, setFullName] = useState(currentProfile?.name && currentProfile.name !== 'Estudiante Marianita' ? currentProfile.name : '');
   const [course, setCourse] = useState(currentProfile?.course || '2do BGU "A"');
+  const [accessCode, setAccessCode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -26,10 +29,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     const clean = fullName.trim();
     const parts = clean.split(/\s+/).filter(Boolean);
 
-    // Rule: Must be at least 2 names and 2 surnames (4 words)
+    // Rule 1: Must be at least 2 names and 2 surnames (4 words)
     if (parts.length < 4) {
       sound.playIncorrect();
-      setErrorMsg('Registro obligatorio: Debes ingresar tus dos nombres y tus dos apellidos completos (mínimo 4 palabras). Ejemplo: María Belén Chimborazo Guamán.');
+      setErrorMsg('Registro obligatorio: Debes ingresar tus dos nombres y tus dos apellidos completos (mínimo 4 palabras). Ejemplo: Carlos Fernando Paredes Morales.');
       return;
     }
 
@@ -38,6 +41,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     if (hasShortWords) {
       sound.playIncorrect();
       setErrorMsg('Cada nombre y apellido debe tener al menos 2 letras.');
+      return;
+    }
+
+    // Rule 2: Access code verification exclusively provided by teacher
+    const cleanCode = accessCode.trim().toUpperCase();
+    if (cleanCode !== REQUIRED_ACCESS_CODE) {
+      sound.playIncorrect();
+      setErrorMsg('Código de acceso incorrecto. Solicita el código exclusivo de registro a tu docente Mgs. Diego Aulla para ingresar.');
       return;
     }
 
@@ -50,7 +61,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       colors: ['#0D47A1', '#DC2626', '#F59E0B']
     });
 
-    onRegister(clean, course);
+    onRegister(clean, course, cleanCode);
   };
 
   return (
@@ -124,6 +135,36 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               <option value='2do BGU "C"'>2do BGU "C"</option>
               <option value='2do "Técnico"'>2do "Técnico"</option>
             </select>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                <span>Código de Acceso Docente:</span>
+              </label>
+              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-900 flex items-center gap-1">
+                <Lock className="w-2.5 h-2.5" />
+                Exclusivo Mgs. Diego Aulla
+              </span>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Ingresa el código proporcionado por el docente..."
+                value={accessCode}
+                onChange={(e) => {
+                  setAccessCode(e.target.value.toUpperCase());
+                  if (errorMsg) setErrorMsg(null);
+                }}
+                required
+                className="w-full p-3 pl-10 rounded-xl border-2 border-amber-400/60 dark:border-amber-500/50 bg-amber-50/40 dark:bg-amber-950/20 text-slate-900 dark:text-white font-mono font-black tracking-widest uppercase text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#0D47A1] focus:border-[#0D47A1] placeholder:text-slate-400 placeholder:font-sans placeholder:tracking-normal placeholder:font-normal"
+              />
+              <KeyRound className="w-4 h-4 text-amber-500 absolute left-3 top-3.5 pointer-events-none" />
+            </div>
+            <span className="text-[10px] text-slate-500 mt-1 block">
+              * Código de acceso exclusivo que el docente te indicará en clase para autorizar tu registro.
+            </span>
           </div>
 
           <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-slate-600 dark:text-slate-300 text-[11px] space-y-1">

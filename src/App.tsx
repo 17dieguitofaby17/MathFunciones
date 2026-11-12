@@ -52,11 +52,12 @@ export default function App() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
   const [newBadgeToast, setNewBadgeToast] = useState<string | null>(null);
 
-  // Check if student has valid registration (2 names and 2 surnames = 4 words)
+  // Check if student has valid registration (2 names and 2 surnames = 4 words) and verified access code
   const isStudentRegistered = 
-    profile.name && 
+    Boolean(profile.name) && 
     profile.name !== 'Estudiante Marianita' && 
-    profile.name.trim().split(/\s+/).filter(Boolean).length >= 4;
+    profile.name.trim().split(/\s+/).filter(Boolean).length >= 4 &&
+    Boolean(profile.accessCodeVerified);
 
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState<boolean>(!isStudentRegistered);
 
@@ -79,11 +80,12 @@ export default function App() {
     saveProfile(updated);
   };
 
-  const handleRegisterStudent = (fullName: string, course: string) => {
+  const handleRegisterStudent = (fullName: string, course: string, _accessCode: string) => {
     const updated: StudentProfile = {
       ...profile,
       name: fullName,
       course: course,
+      accessCodeVerified: true,
     };
     handleUpdateProfile(updated);
     setIsRegistrationModalOpen(false);

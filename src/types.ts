@@ -127,6 +127,7 @@ export interface StudentProfile {
   id: string;
   name: string;
   course: string; // e.g., '2do BGU "A"', '2do BGU "B"', '2do BGU "C"'
+  accessCodeVerified?: boolean;
   avatarId: string;
   xp: number;
   streak: number;
