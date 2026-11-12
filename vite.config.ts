@@ -4,6 +4,9 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  base: '/MathFunciones/',
+  plugins: [react(), tailwindcss()],
+})
   return {
     plugins: [react(), tailwindcss()],
     base: '/MathFunciones/',
