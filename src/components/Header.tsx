@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand Zone with Official Crest */}
         <div className="flex items-center gap-2.5 shrink-0">
           <img
-            src="/assets/aistudio/image_b65e9819.png"
+            src="/MathFunciones/assets/aistudio/image_b65e9819.png"
             alt="Escudo Oficial Santa Mariana de Jesús"
             className="w-10 h-11 object-contain drop-shadow-sm shrink-0"
             referrerPolicy="no-referrer"
