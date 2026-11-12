@@ -217,7 +217,7 @@ export default function App() {
               <div className="lg:col-span-5 hidden lg:block">
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-400/40 transform hover:scale-[1.02] transition-transform duration-300 max-h-64 bg-white/5 backdrop-blur-sm">
                   <img
-                    src="/assets/aistudio/image_a1394f25.png"
+                    src="/MathFunciones/assets/aistudio/image_a1394f25.png"
                     alt="Santa Mariana de Jesús - Ternura que acompaña, Firmeza que transforma"
                     className="w-full h-64 object-cover object-top"
                     referrerPolicy="no-referrer"
