@@ -59,7 +59,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         {/* Header with Official Shield */}
         <div className="text-center space-y-2">
           <img
-            src="/assets/aistudio/image_b65e9819.png"
+            src="/MathFunciones/assets/aistudio/image_b65e9819.png"
             alt="Escudo Oficial Santa Mariana de Jesús"
             className="w-16 h-18 object-contain mx-auto drop-shadow-md"
             referrerPolicy="no-referrer"
