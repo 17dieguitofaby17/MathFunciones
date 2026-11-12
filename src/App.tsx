@@ -298,7 +298,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <img
-              src="/assets/aistudio/image_b65e9819.png"
+              src="/MathFunciones/assets/aistudio/image_b65e9819.png"
               alt="Escudo"
               className="w-6 h-6 object-contain"
               referrerPolicy="no-referrer"
